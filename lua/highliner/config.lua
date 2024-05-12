@@ -1,8 +1,9 @@
 local M = {}
 
 ---@class highliner.Pattern
----@field filetype? string Limit the pattern to a specific filetype.
----@field query string Tree-sitter query.
+---@field language? string|string[] Limit the pattern to a specific language.
+---@field query? string Tree-sitter query.
+---@field groups? table<string, string> Highlight groups.
 
 ---@return highliner.Config
 function M.default_config()

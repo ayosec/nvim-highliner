@@ -15,7 +15,7 @@ function M.try(f)
     local ok, res = xpcall(f, debug.traceback)
     if not ok then
         if #Output < MAX_BUFFER_SIZE then
-            Output:put(res)
+            Output:put(res, "\n\n")
         end
 
         if not NotifySent then

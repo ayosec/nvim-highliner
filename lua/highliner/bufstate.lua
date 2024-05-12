@@ -1,8 +1,10 @@
 local M = {}
 
+local Langs = require("highliner.langs")
+
 ---@class highliner.BufState
 ---@field ts_parser any
----@field queries any[]
+---@field lang highliner.Language
 
 ---@type table<integer, highliner.BufState|false>
 local Buffers = {}
@@ -35,20 +37,17 @@ function M.from_buffer(config, bufnr)
         return false
     end
 
-    -- Collect queries for this buffer.
-    local queries = {}
+    local lang = Langs.get(config, ts_parser:lang())
 
-    local filetype = vim.bo[bufnr].filetype
-    for _, pattern in pairs(config.patterns) do
-        if pattern.filetype == nil or pattern.filetype == filetype then
-            table.insert(queries, vim.treesitter.query.parse(filetype, pattern.query))
-        end
+    if not lang then
+        Buffers[bufnr] = false
+        return false
     end
 
     ---@type highliner.BufState
     local bufstate = {
         ts_parser = ts_parser,
-        queries = queries,
+        lang = lang,
     }
 
     Buffers[bufnr] = bufstate
