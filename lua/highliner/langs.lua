@@ -7,6 +7,8 @@ local M = {}
 
 local CACHE = {}
 
+local GENERATED_GROUP = 0
+
 ---@param lang_pattern string|string[]|nil
 ---@param lang_name string
 ---@return boolean
@@ -62,12 +64,10 @@ function M.get(config, lang_name)
                     end
 
                     if capture_id then
-                        if target:sub(1, 1) == "#" then
-                            local new_group = "__HighlinerBackground_" .. target:sub(2)
-                            vim.api.nvim_set_hl(0, new_group, {
-                                bg = target,
-                                default = true,
-                            })
+                        if type(target) == "table" then
+                            GENERATED_GROUP = GENERATED_GROUP + 1
+                            local new_group = "__HighlinerGenerated_" .. GENERATED_GROUP
+                            vim.api.nvim_set_hl(0, new_group, target)
                             target = new_group
                         end
 
