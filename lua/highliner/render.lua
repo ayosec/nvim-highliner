@@ -13,6 +13,7 @@ local function set_buffer_lines(buffer_lines, hl_name, node, topline, botline_gu
         hl_group = hl_name,
         hl_eol = true,
         end_col = 0,
+        priority = 0,
     }
 
     for row = math.max(row1, topline), math.min(row2, botline_guess) do
