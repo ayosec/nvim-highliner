@@ -93,9 +93,11 @@ function M.get(config, lang_name)
     return lang
 end
 
---- Reset the language's cache.
-function M.reset_cache()
-    CACHE = {}
-end
+vim.api.nvim_create_autocmd("User", {
+    pattern = "HighlinerResetCaches",
+    callback = function()
+        CACHE = {}
+    end,
+})
 
 return M

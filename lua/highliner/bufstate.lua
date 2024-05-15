@@ -7,7 +7,7 @@ local Langs = require("highliner.langs")
 ---@field lang highliner.Language
 
 ---@type table<integer, highliner.BufState|false>
-local Buffers = {}
+local BUFFERS = {}
 
 local AC_GROUP = vim.api.nvim_create_augroup("Highliner/BufState", {})
 
@@ -15,7 +15,7 @@ local AC_GROUP = vim.api.nvim_create_augroup("Highliner/BufState", {})
 ---@param bufnr integer
 ---@return highliner.BufState|false
 function M.from_buffer(config, bufnr)
-    local cached = Buffers[bufnr]
+    local cached = BUFFERS[bufnr]
     if cached ~= nil then
         return cached
     end
@@ -26,21 +26,21 @@ function M.from_buffer(config, bufnr)
         buffer = bufnr,
         once = true,
         callback = function()
-            Buffers[bufnr] = nil
+            BUFFERS[bufnr] = nil
         end,
     })
 
     -- Skip buffers without a treesitter parser.
     local ok, ts_parser = pcall(vim.treesitter.get_parser, bufnr)
     if not ok then
-        Buffers[bufnr] = false
+        BUFFERS[bufnr] = false
         return false
     end
 
     local lang = Langs.get(config, ts_parser:lang())
 
     if not lang then
-        Buffers[bufnr] = false
+        BUFFERS[bufnr] = false
         return false
     end
 
@@ -50,9 +50,16 @@ function M.from_buffer(config, bufnr)
         lang = lang,
     }
 
-    Buffers[bufnr] = bufstate
+    BUFFERS[bufnr] = bufstate
 
     return bufstate
 end
+
+vim.api.nvim_create_autocmd("User", {
+    pattern = "HighlinerResetCaches",
+    callback = function()
+        BUFFERS = {}
+    end,
+})
 
 return M
