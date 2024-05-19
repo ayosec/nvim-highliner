@@ -7,7 +7,9 @@ local M = {}
 
 local CACHE = {}
 
-local GENERATED_GROUP = 0
+local GENERATED_GROUP_ID = 0
+
+local GENERATED_GROUPS = {}
 
 ---@param lang_pattern string|string[]|nil
 ---@param lang_name string
@@ -65,9 +67,13 @@ function M.get(config, lang_name)
 
                     if capture_id then
                         if type(target) == "table" then
-                            GENERATED_GROUP = GENERATED_GROUP + 1
-                            local new_group = "__HighlinerGenerated_" .. GENERATED_GROUP
+                            GENERATED_GROUP_ID = GENERATED_GROUP_ID + 1
+                            local new_group = "__HighlinerGenerated_" .. GENERATED_GROUP_ID
+
                             vim.api.nvim_set_hl(0, new_group, target)
+
+                            GENERATED_GROUPS[new_group] = target
+
                             target = new_group
                         end
 
@@ -97,6 +103,15 @@ vim.api.nvim_create_autocmd("User", {
     pattern = "HighlinerResetCaches",
     callback = function()
         CACHE = {}
+    end,
+})
+
+vim.api.nvim_create_autocmd("ColorScheme", {
+    callback = function()
+        -- Restore generated groups after changes in the colorscheme.
+        for name, hl in pairs(GENERATED_GROUPS) do
+            vim.api.nvim_set_hl(0, name, hl)
+        end
     end,
 })
 
