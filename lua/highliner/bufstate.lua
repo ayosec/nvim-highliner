@@ -32,7 +32,7 @@ function M.from_buffer(config, bufnr)
 
     -- Skip buffers without a treesitter parser.
     local ok, ts_parser = pcall(vim.treesitter.get_parser, bufnr)
-    if not ok then
+    if not ok or not ts_parser then
         BUFFERS[bufnr] = false
         return false
     end
