@@ -3,7 +3,7 @@ local M = {}
 local BufState = require("highliner.bufstate")
 local Logger = require("highliner.logger")
 
-local NAMESPACE = require("highliner").NAMESPACE
+local NAMESPACE = vim.api.nvim_create_namespace("Highliner")
 
 local function set_buffer_lines(buffer_lines, hl_name, node, topline, botline_guess)
     local row1, _, row2, col2 = node:range()

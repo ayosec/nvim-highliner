@@ -1,7 +1,5 @@
 local M = {}
 
-M.NAMESPACE = vim.api.nvim_create_namespace("Highliner")
-
 ---@param config? highliner.Config
 function M.setup(config)
     local default_config = require("highliner.config").default_config()

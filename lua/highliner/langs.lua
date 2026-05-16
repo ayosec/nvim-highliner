@@ -51,11 +51,11 @@ function M.get(config, lang_name)
                 table.insert(ts_queries, vim.treesitter.query.parse(lang_name, pattern.query))
             end
 
-            if pattern.groups then
-                if not ts_highlight_query then
-                    ts_highlight_query = vim.treesitter.query.get(lang_name, "highlights")
-                end
+            if not ts_highlight_query then
+                ts_highlight_query = vim.treesitter.query.get(lang_name, "highlights")
+            end
 
+            if pattern.groups and ts_highlight_query then
                 for source_group, target in pairs(pattern.groups) do
                     local capture_id = nil
                     for id, capture_name in pairs(ts_highlight_query.captures) do

@@ -36,7 +36,7 @@ end
 function M.print()
     local msg = Output:tostring():gsub("\t", "    ")
     Output:reset()
-    vim.api.nvim_err_writeln(msg)
+    vim.api.nvim_echo({ { msg } }, false, { err = true })
 end
 
 return M
