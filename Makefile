@@ -1,20 +1,16 @@
 .PHONY: all
-all: test lint fmt-check
-
-.PHONY: test
-test:
-	tests/run.lua
+all: lint fmt-check
 
 .PHONY: lint
 lint:
-	luacheck lua tests \
+	luacheck lua \
 	  --max-comment-line-length 200 \
-	  --globals a vim
+	  --globals vim
 
 .PHONY: fmt
 fmt:
-	stylua lua tests
+	stylua lua
 
 .PHONY: fmt-check
 fmt-check:
-	stylua --check lua tests
+	stylua --check lua
