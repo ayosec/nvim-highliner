@@ -1,10 +1,11 @@
 local M = {}
 
 ---@class highliner.Language
----@field hl_groups table<any, string> Highlight group from capture id.
----@field ts_queries any[]
----@field ts_highlight_query any
+---@field ts_queries vim.treesitter.Query[]
+---@field hl_groups table<integer, string> Highlight group from capture id.
+---@field ts_highlight_query vim.treesitter.Query?
 
+--- @type { [string]: highliner.Language }
 local CACHE = {}
 
 local GENERATED_GROUP_ID = 0
@@ -57,7 +58,7 @@ function M.get(config, lang_name)
 
             if pattern.groups and ts_highlight_query then
                 for source_group, target in pairs(pattern.groups) do
-                    local capture_id = nil
+                    local capture_id = nil --- @type integer?
                     for id, capture_name in pairs(ts_highlight_query.captures) do
                         if capture_name == source_group then
                             capture_id = id

@@ -5,9 +5,15 @@ local Logger = require("highliner.logger")
 
 local NAMESPACE = vim.api.nvim_create_namespace("Highliner")
 
-local function set_buffer_lines(buffer_lines, hl_name, node, topline, botline_guess)
+--- @param buffer_lines { [integer]: vim.api.keyset.set_extmark }
+--- @param hl_name string
+--- @param node TSNode
+--- @param toprow integer
+--- @param botrow integer
+local function set_buffer_lines(buffer_lines, hl_name, node, toprow, botrow)
     local row1, _, row2, col2 = node:range()
 
+    --- @type vim.api.keyset.set_extmark
     local opts = {
         ephemeral = true,
         hl_group = hl_name,
@@ -16,7 +22,7 @@ local function set_buffer_lines(buffer_lines, hl_name, node, topline, botline_gu
         priority = 0,
     }
 
-    for row = math.max(row1, topline), math.min(row2, botline_guess) do
+    for row = math.max(row1, toprow), math.min(row2, botrow) do
         if row == row2 and col2 == 0 then
             -- Don't add the last line if it ends at column 0.
             break
@@ -28,8 +34,12 @@ end
 
 -- Implementation of the decoration provider events.
 
----@param config highliner.Config
-local function dc_win(config, state, bufnr, topline, botline_guess)
+--- @param config highliner.Config
+--- @param state highliner.render.DecorationState
+--- @param bufnr integer
+--- @param toprow integer
+--- @param botrow integer
+local function dc_win(config, state, bufnr, toprow, botrow)
     local bufstate = BufState.from_buffer(config, bufnr)
 
     if not bufstate then
@@ -44,19 +54,19 @@ local function dc_win(config, state, bufnr, topline, botline_guess)
 
     -- Apply highlights from tree-sitter queries.
     for _, query in pairs(lang.ts_queries) do
-        for id, node, _ in query:iter_captures(tstree:root(), bufnr, topline, botline_guess) do
+        for id, node, _ in query:iter_captures(tstree:root(), bufnr, toprow, botrow) do
             local name = query.captures[id]
-            set_buffer_lines(buffer_lines, name, node, topline, botline_guess)
+            set_buffer_lines(buffer_lines, name, node, toprow, botrow)
         end
     end
 
     -- Reuse highlights from the default queries.
-    if not vim.tbl_isempty(lang.hl_groups) then
-        local hlq = bufstate.lang.ts_highlight_query
-        for id, node, _ in hlq:iter_captures(tstree:root(), bufnr, topline, botline_guess) do
+    local hlq = bufstate.lang.ts_highlight_query
+    if hlq and not vim.tbl_isempty(lang.hl_groups) then
+        for id, node, _ in hlq:iter_captures(tstree:root(), bufnr, toprow, botrow) do
             local target_group = lang.hl_groups[id]
             if target_group then
-                set_buffer_lines(buffer_lines, target_group, node, topline, botline_guess)
+                set_buffer_lines(buffer_lines, target_group, node, toprow, botrow)
             end
         end
     end
@@ -64,6 +74,9 @@ local function dc_win(config, state, bufnr, topline, botline_guess)
     return true
 end
 
+--- @param state highliner.render.DecorationState
+--- @param bufnr integer
+--- @param row integer
 local function dc_line(state, bufnr, row)
     local buffer = state.buffers[bufnr]
     local opts = buffer and buffer[row]
@@ -75,14 +88,16 @@ end
 
 ---@param config highliner.Config
 function M.setup(config)
+    --- @class (private) highliner.render.DecorationState
     local state = {
+        --- @type { [integer]: { [integer]: vim.api.keyset.set_extmark } }
         buffers = {},
     }
 
     vim.api.nvim_set_decoration_provider(NAMESPACE, {
-        on_win = function(_, _, bufnr, topline, botline_guess)
+        on_win = function(_, _, bufnr, toprow, botrow)
             return Logger.try(function()
-                return dc_win(config, state, bufnr, topline, botline_guess)
+                return dc_win(config, state, bufnr, toprow, botrow)
             end)
         end,
 

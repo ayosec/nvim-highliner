@@ -3,7 +3,7 @@ local M = {}
 local Langs = require("highliner.langs")
 
 ---@class highliner.BufState
----@field ts_parser any
+---@field ts_parser vim.treesitter.LanguageTree
 ---@field lang highliner.Language
 
 ---@type table<integer, highliner.BufState|false>
