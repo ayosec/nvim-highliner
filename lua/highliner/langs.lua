@@ -1,15 +1,28 @@
 local M = {}
 
-local AC_GROUP = vim.api.nvim_create_augroup("Highliner/Langs", {})
-
 ---@class highliner.Language
 ---@field ts_queries vim.treesitter.Query[]
 ---@field hl_groups table<integer, string> Highlight group from capture id.
 ---@field ts_highlight_query vim.treesitter.Query?
 
-local GENERATED_GROUP_ID = 0
+--- Compute a hash from the items of a table.
+---
+--- The implementation ignores the fact that `pairs` can return items in any
+--- order, but for our use-case this is not important: most tables will have
+--- only one element, and for tables with more than one, it is not an issue
+--- to create multiple highlight groups with the same arguments.
+---
+--- @param tbl table
+--- @return string
+local function compute_hash(tbl)
+    local plain = ""
 
-local GENERATED_GROUPS = {}
+    for k, v in pairs(tbl) do
+        plain = plain .. k .. "\1" .. v .. "\2"
+    end
+
+    return string.sub(vim.fn.sha256(plain), 0, 12)
+end
 
 ---@param lang_pattern string|string[]|nil
 ---@param lang_name string
@@ -62,12 +75,10 @@ function M.get(patterns, lang_name)
 
                     if capture_id then
                         if type(target) == "table" then
-                            GENERATED_GROUP_ID = GENERATED_GROUP_ID + 1
-                            local new_group = "__HighlinerGenerated_" .. GENERATED_GROUP_ID
+                            local hash = compute_hash(target)
+                            local new_group = "HighlinerGenerated_" .. hash
 
                             vim.api.nvim_set_hl(0, new_group, target)
-
-                            GENERATED_GROUPS[new_group] = target
 
                             target = new_group
                         end
@@ -95,12 +106,10 @@ function M.get(patterns, lang_name)
 end
 
 vim.api.nvim_create_autocmd("ColorScheme", {
-    group = AC_GROUP,
+    group = vim.api.nvim_create_augroup("highliner.langs", {}),
     callback = function()
-        -- Restore generated groups after changes in the colorscheme.
-        for name, hl in pairs(GENERATED_GROUPS) do
-            vim.api.nvim_set_hl(0, name, hl)
-        end
+        -- Reset cache, so the highlight groups are regenerated on next render.
+        require("highliner.bufstate").reset_cache()
     end,
 })
 
