@@ -1,22 +1,29 @@
 local M = {}
 
----@param config? highliner.Config
-function M.setup(config)
-    local default_config = require("highliner.config").default_config()
-    config = vim.tbl_deep_extend("force", {}, default_config, config or {})
-
-    require("highliner.render").setup(config)
-end
+--- @class highliner.Pattern
+--- @field language? string|string[] Limit the pattern to a specific language.
+--- @field query? string Tree-sitter query.
+--- @field groups? table<string, string> Highlight groups.
 
 local function reset_cache()
-    vim.api.nvim_exec_autocmds("User", { pattern = "HighlinerResetCaches" })
-
-    vim.schedule(function()
-        vim.cmd.redraw { bang = true }
-    end)
+    require("highliner.bufstate").reset_cache()
+    vim.cmd.redraw { bang = true }
 end
 
--- User command to reset the internal caches.
-vim.api.nvim_create_user_command("HighlinerResetCaches", reset_cache, { nargs = 0 })
+function M.setup()
+    vim.api.nvim_create_user_command("HighlinerResetCache", reset_cache, {
+        nargs = 0,
+        desc = "Reset the internal cache for Highliner",
+    })
+end
+
+--- Add a highlight pattern to the given buffer. If `buf` is `0`, use
+--- the current buffer.
+---
+--- @param buf integer
+--- @param pattern highliner.Pattern
+function M.add(buf, pattern)
+    require("highliner.bufstate").add(buf, pattern)
+end
 
 return M

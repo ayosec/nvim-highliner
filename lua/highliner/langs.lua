@@ -1,12 +1,11 @@
 local M = {}
 
+local AC_GROUP = vim.api.nvim_create_augroup("Highliner/Langs", {})
+
 ---@class highliner.Language
 ---@field ts_queries vim.treesitter.Query[]
 ---@field hl_groups table<integer, string> Highlight group from capture id.
 ---@field ts_highlight_query vim.treesitter.Query?
-
---- @type { [string]: highliner.Language }
-local CACHE = {}
 
 local GENERATED_GROUP_ID = 0
 
@@ -33,20 +32,15 @@ local function match_language(lang_pattern, lang_name)
     return false
 end
 
----@param config highliner.Config
+---@param patterns highliner.Pattern[]
 ---@param lang_name string
 ---@return highliner.Language|nil
-function M.get(config, lang_name)
-    local lang = CACHE[lang_name]
-    if lang then
-        return lang
-    end
-
+function M.get(patterns, lang_name)
     local hl_groups = {}
     local ts_highlight_query = nil
     local ts_queries = {}
 
-    for _, pattern in pairs(config.patterns) do
+    for _, pattern in pairs(patterns) do
         if match_language(pattern.language, lang_name) then
             if pattern.query then
                 table.insert(ts_queries, vim.treesitter.query.parse(lang_name, pattern.query))
@@ -90,24 +84,18 @@ function M.get(config, lang_name)
         return nil
     end
 
-    lang = {
+    --- @type highliner.Language
+    local lang = {
         ts_queries = ts_queries,
         hl_groups = hl_groups,
         ts_highlight_query = ts_highlight_query,
     }
 
-    CACHE[lang_name] = lang
     return lang
 end
 
-vim.api.nvim_create_autocmd("User", {
-    pattern = "HighlinerResetCaches",
-    callback = function()
-        CACHE = {}
-    end,
-})
-
 vim.api.nvim_create_autocmd("ColorScheme", {
+    group = AC_GROUP,
     callback = function()
         -- Restore generated groups after changes in the colorscheme.
         for name, hl in pairs(GENERATED_GROUPS) do

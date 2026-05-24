@@ -6,41 +6,38 @@ local Langs = require("highliner.langs")
 ---@field ts_parser vim.treesitter.LanguageTree
 ---@field lang highliner.Language
 
----@type table<integer, highliner.BufState|false>
-local BUFFERS = {}
+--- @type table<integer, highliner.Pattern[]>
+local BuffersPatterns = {}
+
+--- @type table<integer, highliner.BufState|false>
+local BuffersState = {}
 
 local AC_GROUP = vim.api.nvim_create_augroup("Highliner/BufState", {})
 
----@param config highliner.Config
 ---@param bufnr integer
 ---@return highliner.BufState|false
-function M.from_buffer(config, bufnr)
-    local cached = BUFFERS[bufnr]
+function M.from_buffer(bufnr)
+    local cached = BuffersState[bufnr]
     if cached ~= nil then
         return cached
     end
 
-    -- Clear cached data when the buffer is deleted.
-    vim.api.nvim_create_autocmd("BufUnload", {
-        group = AC_GROUP,
-        buffer = bufnr,
-        once = true,
-        callback = function()
-            BUFFERS[bufnr] = nil
-        end,
-    })
-
-    -- Skip buffers without a treesitter parser.
-    local ok, ts_parser = pcall(vim.treesitter.get_parser, bufnr)
-    if not ok or not ts_parser then
-        BUFFERS[bufnr] = false
+    local patterns = BuffersPatterns[bufnr]
+    if patterns == nil then
+        -- Skip buffers without patterns.
         return false
     end
 
-    local lang = Langs.get(config, ts_parser:lang())
+    local ok, ts_parser = pcall(vim.treesitter.get_parser, bufnr)
+    if not ok or not ts_parser then
+        -- Skip buffers without a treesitter parser.
+        BuffersState[bufnr] = false
+        return false
+    end
 
+    local lang = Langs.get(patterns, ts_parser:lang())
     if not lang then
-        BUFFERS[bufnr] = false
+        BuffersState[bufnr] = false
         return false
     end
 
@@ -50,16 +47,46 @@ function M.from_buffer(config, bufnr)
         lang = lang,
     }
 
-    BUFFERS[bufnr] = bufstate
+    BuffersState[bufnr] = bufstate
 
     return bufstate
 end
 
-vim.api.nvim_create_autocmd("User", {
-    pattern = "HighlinerResetCaches",
-    callback = function()
-        BUFFERS = {}
-    end,
-})
+function M.reset_cache()
+    BuffersState = {}
+end
+
+--- @param buf integer
+--- @param pattern highliner.Pattern
+function M.add(buf, pattern)
+    if buf == 0 then
+        buf = vim.api.nvim_get_current_buf()
+    end
+
+    assert(vim.api.nvim_buf_is_valid(buf))
+
+    local entry = BuffersPatterns[buf]
+    if entry == nil then
+        entry = {}
+        BuffersPatterns[buf] = entry
+
+        vim.api.nvim_create_autocmd("BufDelete", {
+            group = AC_GROUP,
+            buffer = buf,
+            once = true,
+            callback = function()
+                BuffersPatterns[buf] = nil
+                BuffersState[buf] = nil
+            end,
+        })
+    end
+
+    table.insert(entry, pattern)
+
+    -- Reset cache, if any.
+    BuffersState[buf] = nil
+
+    require("highliner.render").setup()
+end
 
 return M

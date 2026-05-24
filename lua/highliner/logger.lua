@@ -1,5 +1,7 @@
 local M = {}
 
+local AC_GROUP = vim.api.nvim_create_augroup("Highliner/Logger", {})
+
 --- @type integer|nil
 local current_buffer = nil
 
@@ -20,6 +22,7 @@ local function errors_buffer()
     end)
 
     vim.api.nvim_create_autocmd("BufDelete", {
+        group = AC_GROUP,
         buffer = current_buffer,
         once = true,
         callback = function()

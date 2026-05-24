@@ -34,13 +34,12 @@ end
 
 -- Implementation of the decoration provider events.
 
---- @param config highliner.Config
 --- @param state highliner.render.DecorationState
 --- @param bufnr integer
 --- @param toprow integer
 --- @param botrow integer
-local function dc_win(config, state, bufnr, toprow, botrow)
-    local bufstate = BufState.from_buffer(config, bufnr)
+local function dc_win(state, bufnr, toprow, botrow)
+    local bufstate = BufState.from_buffer(bufnr)
 
     if not bufstate then
         return false
@@ -86,8 +85,7 @@ local function dc_line(state, bufnr, row)
     end
 end
 
----@param config highliner.Config
-function M.setup(config)
+function M.setup()
     --- @class (private) highliner.render.DecorationState
     local state = {
         --- @type { [integer]: { [integer]: vim.api.keyset.set_extmark } }
@@ -97,7 +95,7 @@ function M.setup(config)
     vim.api.nvim_set_decoration_provider(NAMESPACE, {
         on_win = function(_, _, bufnr, toprow, botrow)
             return Logger.try(function()
-                return dc_win(config, state, bufnr, toprow, botrow)
+                return dc_win(state, bufnr, toprow, botrow)
             end)
         end,
 
@@ -112,6 +110,10 @@ function M.setup(config)
             state.buffers = {}
         end,
     })
+
+    -- Override setup(), so we can call it multiple times without
+    -- extra state.
+    M.setup = function() end
 end
 
 return M
