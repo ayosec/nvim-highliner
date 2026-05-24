@@ -3,6 +3,8 @@ local M = {}
 local BufState = require("highliner.bufstate")
 local Logger = require("highliner.logger")
 
+local ENABLED = true
+
 local NAMESPACE = vim.api.nvim_create_namespace("Highliner/Render")
 
 --- @param bufnr integer
@@ -64,12 +66,19 @@ local function dc_win(bufnr, toprow, botrow)
     return true
 end
 
+function M.toggle()
+    ENABLED = not ENABLED
+    vim.cmd.redraw { bang = true }
+end
+
 function M.setup()
     vim.api.nvim_set_decoration_provider(NAMESPACE, {
         on_win = function(_, _, bufnr, toprow, botrow)
-            Logger.try(function()
-                dc_win(bufnr, toprow, botrow)
-            end)
+            if ENABLED then
+                Logger.try(function()
+                    dc_win(bufnr, toprow, botrow)
+                end)
+            end
             return false
         end,
     })

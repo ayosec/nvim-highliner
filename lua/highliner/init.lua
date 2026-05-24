@@ -5,12 +5,21 @@ local M = {}
 --- @field query? string Tree-sitter query.
 --- @field groups? table<string, string> Highlight groups.
 
+local function toggle()
+    require("highliner.render").toggle()
+end
+
 local function reset_cache()
     require("highliner.bufstate").reset_cache()
     vim.cmd.redraw { bang = true }
 end
 
 function M.setup()
+    vim.api.nvim_create_user_command("HighlinerToggle", toggle, {
+        nargs = 0,
+        desc = "Enable/disable line highlights",
+    })
+
     vim.api.nvim_create_user_command("HighlinerResetCache", reset_cache, {
         nargs = 0,
         desc = "Reset the internal cache for Highliner",
