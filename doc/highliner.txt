@@ -1,0 +1,191 @@
+*highliner.txt*						       Highlight Lines
+
+==============================================================================
+INTRODUCTION							   *highliner*
+
+Highliner is a Nvim plugin to add highlights based on |treesitter| queries.
+The difference with the functionality provided by Nvim is that these
+highlights are applied to the entire line (instead of only to characters),
+so it can be used to set a background color that covers the full window width.
+
+==============================================================================
+SETUP							     *highliner-setup*
+
+The `setup()` function can be used to initialize some extra features of the
+plugin, like the |:HighlinerToggle| command. It is not required, but
+recommended.
+>lua
+    require("highliner").setup()
+<
+
+Use |highliner.add()| to add patterns to buffers. See |highliner-patterns| for
+more details.
+
+==============================================================================
+ADDING PATTERNS						  *highliner-patterns*
+
+|highliner.add()| must be used to add patterns to a buffer. The first argument
+is the buffer id, or `0` to use the current buffer. The second argument
+defines the pattern.
+
+The pattern is a table with a `language` field, and either a `query` or a
+`groups` field.
+
+`language` can be a string or a list of strings. If omitted, the pattern is
+unconditionally applied to the buffer. If specified, the pattern is applied
+only if the language parser for the buffer matches the value of `language`.
+The language for a buffer can be shown with |LanguageTree:lang()| using `:=`:
+>vim
+    := vim.treesitter.get_parser():lang()
+<
+
+Patterns added to a buffer are not shared by other buffers of the same
+language. To add patterns, use an autocommand like |FileType|, or use a
+filetype plugin in an |after-directory|.
+
+For example, to add a background to code blocks in a Markdown file, save the
+following snippet in `after/ftplugin/markdown.lua`:
+>lua
+    local ok, highliner = pcall(require, "highliner")
+    if not ok then return end
+
+    highliner.add(0, {
+        language = "markdown",
+        groups = {
+            ["markup.raw.block"] = { bg = "#303030" },
+        }
+    })
+<
+
+See |highliner-add-by-query| and |highliner-add-by-group| for details on how
+to use the `query` and `groups` fields.
+
+An alternative to filetype plugins in an |after-directory| is using an
+autocommand like |FileType|.
+
+The next example adds a pattern to multiple languages. If the parser for the
+buffer is not in the `language` list, the pattern is silently ignored.
+>lua
+    local ok, highliner = pcall(require, "highliner")
+    if ok then
+        vim.api.nvim_create_autocmd("FileType", {
+            group = vim.api.nvim_create_augroup("HighlinerPatterns", {}),
+            callback = function()
+                highliner.add(0, {
+                    language = { "lua", "rust" },
+                    groups = {
+                        ["comment.documentation"] = { bg = "#001122" },
+                    }
+                })
+            end,
+        })
+    end
+<
+
+==============================================================================
+ADD BY QUERY					      *highliner-add-by-query*
+
+The `query` field in |highliner.add()| uses a |treesitter-query| to select
+lines to highlight. In the query, the capture name specifies the highlight
+group to use.
+
+For example, this snippet set the background to `#102020` for the lines
+containing a `struct` declaration in a C file.
+>lua
+    -- after/ftplugin/c.lua
+
+    vim.api.nvim_set_hl(0, "HL_C_Struct", { bg = "#102020" })
+
+    highliner.add(0, {
+        language = { "c" },
+        query = [[
+            (struct_specifier
+               body: (field_declaration_list)
+            ) @HL_C_Struct
+        ]],
+    })
+<
+
+==============================================================================
+ADD BY GROUP					      *highliner-add-by-group*
+
+Instead of Treesitter queries, it is possible to select lines by reusing the
+capture names from the |treesitter-highlight-groups|.
+
+The key for each entry of the `groups` table is the capture name, and its
+value is either a string (to reuse an existing |highlight-groups|) or a table
+(to define a new one).
+
+To see the highlight capture names in a line, move the cursor to it and call
+|vim.treesitter.get_captures_at_cursor()|.
+>vim
+    := vim.treesitter.get_captures_at_cursor()
+<
+Another option is the `capture` field in the output of the |:Inspect!| command.
+
+The value can be either a string or a table. If it is a string, it must be a
+valid |highlight-groups|.
+
+For example, the next snippet highlights with |hl-Search| lines with
+`markup.heading.1` in help files. You can test it with this help file by
+selecting the block below with `vip`, and then executing it with |:so|. >lua
+
+    require("highliner").add(0, {
+        language = "vimdoc",
+        groups = {
+            ["markup.heading.1"] = "Search"
+        }
+    })
+
+<
+If the value is a table, the plugin will create the highlight group by itself,
+by calling to |nvim_set_hl()| with the given table. The name of the group is
+generated from the entries of the table.
+
+For example, to add different background colors to the headers in a Markdown
+file, depending on their level:
+>lua
+    -- after/ftplugin/markdown.lua
+
+    highliner.add(0, {
+        language = "markdown",
+        groups = {
+            ["markup.heading.1"] = { bg = "#111177" },
+            ["markup.heading.2"] = { bg = "#444477" },
+            ["markup.heading.3"] = { bg = "#555599" },
+        }
+    })
+<
+
+==============================================================================
+API							       *highliner-api*
+
+add({bufnr}, {opts})					     *highliner.add()*
+
+    Add a pattern to the given buffer.
+
+    See |highliner-patterns| for more details.
+
+    Parameters: ~
+      • {bufnr}   (`integer`) Buffer id, or `0` for current buffer.
+      • {pattern} (`highliner.Pattern`) Pattern to add.
+		  • language : A string or a list of strings, to limit the
+		    pattern to a specific language.
+		  • query : A |treesitter-query|.
+		  • groups : A table to select lines by
+		    |treesitter-highlight-groups|
+
+							    *:HighlinerToggle*
+:HighlinerToggle
+			Enable or disable the highlights.
+
+			Disabling the highlights does not remove the patterns
+			added to a buffer.
+
+							*:HighlinerResetCache*
+:HighlinerResetCache
+			Reset the internal caches used for render. This is
+			only needed if you found a bug in the plugin.
+
+
+vim:tw=78:ts=8:noet:ft=help:norl:
