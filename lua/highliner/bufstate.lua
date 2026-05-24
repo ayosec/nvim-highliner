@@ -87,6 +87,8 @@ function M.add(buf, pattern)
     BuffersState[buf] = nil
 
     require("highliner.render").setup()
+
+    vim.cmd.redraw { bang = true }
 end
 
 return M
