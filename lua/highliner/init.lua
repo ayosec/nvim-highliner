@@ -24,6 +24,9 @@ function M.setup()
         nargs = 0,
         desc = "Reset the internal cache for Highliner",
     })
+
+    -- Allow multiple calls to setup(), but as a no-op.
+    M.setup = function() end
 end
 
 --- Add a highlight pattern to the given buffer. If `buf` is `0`, use

@@ -8,18 +8,6 @@ The difference with the functionality provided by Nvim is that these
 highlights are applied to the entire line (instead of only to characters),
 so it can be used to set a background color that covers the full window width.
 
-==============================================================================
-SETUP							     *highliner-setup*
-
-The `setup()` function can be used to initialize some extra features of the
-plugin, like the |:HighlinerToggle| command. It is not required, but
-recommended.
->lua
-    require("highliner").setup()
-<
-
-Use |highliner.add()| to add patterns to buffers. See |highliner-patterns| for
-more details.
 
 ==============================================================================
 ADDING PATTERNS						  *highliner-patterns*
