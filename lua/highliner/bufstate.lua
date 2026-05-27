@@ -54,6 +54,18 @@ end
 
 function M.reset_cache()
     BuffersState = {}
+    vim.cmd.redraw { bang = true }
+end
+
+--- @param first integer
+--- @param last integer
+function M.clear_buffers(first, last)
+    for buf = first, last do
+        BuffersPatterns[buf] = nil
+        BuffersState[buf] = nil
+    end
+
+    vim.cmd.redraw { bang = true }
 end
 
 --- @param buf integer

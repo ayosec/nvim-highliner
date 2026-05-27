@@ -70,6 +70,14 @@ buffer is not in the `language` list, the pattern is silently ignored.
     end
 <
 
+To reload the patterns for a buffer, first clear the current ones with
+|:HighlinerClear|, and then call |:filetype| `detect`. `detect` will execute
+the updated configuration (like filetype plugins, or |FileType| autocommands)
+so the new patters can be reapplied.
+>vim
+    :HighlinerClear | :filetype detect
+<
+
 ==============================================================================
 ADD BY QUERY					      *highliner-add-by-query*
 
@@ -163,12 +171,27 @@ add({bufnr}, {opts})					     *highliner.add()*
 		  • groups : A table to select lines by
 		    |treesitter-highlight-groups|
 
+							     *:HighlinerClear*
+:HighlinerClear
+:[N]HighlinerClear
+:[N,M]HighlinerClear
+			Remove patterns added to a buffer, or to a range of
+			buffers. Examples: >vim
+
+			" clear patterns in current buffer
+			:HighlinerClear
+
+			" clear patterns in all buffers
+			:%HighlinerClear
+<
+
 							    *:HighlinerToggle*
 :HighlinerToggle
 			Enable or disable the highlights.
 
 			Disabling the highlights does not remove the patterns
 			added to a buffer.
+
 
 							*:HighlinerResetCache*
 :HighlinerResetCache
